@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3f4f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="噪音提醒 v4" />
+  <title>噪音提醒系統 v4 Mobile</title>
+  <style>
+    :root {
+      --bg: #f2f3f5;
+      --card: #ffffff;
+      --soft: #f7f7f8;
+      --text: #222;
+      --muted: #666;
+      --line: #dedfe3;
+      --blue: #0a84ff;
+      --green: #16a34a;
+      --red: #dc2626;
+      --amber: #d97706;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", Arial, sans-serif; background: var(--bg); color: var(--text); }
+    body { padding: env(safe-area-inset-top) 12px calc(92px + env(safe-area-inset-bottom)); }
+    .app { max-width: 760px; margin: 0 auto; }
+    .topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 10px 8px 12px; background: rgba(242,243,245,.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+    h1 { font-size: 20px; margin: 0; font-weight: 800; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin: 12px 0; box-shadow: 0 6px 18px rgba(0,0,0,.04); }
+    .card-title { font-size: 16px; font-weight: 800; margin: 0 0 12px; color: #333; }
+    .grid { display: grid; gap: 10px; }
+    .device-row { display: grid; grid-template-columns: 120px 1fr; gap: 8px; align-items: center; }
+    label { font-size: 14px; font-weight: 700; color: #333; }
+    select, input[type="text"] { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); padding: 0 10px; font-size: 15px; color: var(--text); }
+    select:disabled { opacity: .55; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn { appearance: none; border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 13px; min-height: 44px; padding: 10px 14px; font-size: 15px; font-weight: 800; cursor: pointer; touch-action: manipulation; }
+    .btn:active { transform: scale(.985); }
+    .btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .btn.danger { background: var(--red); color: #fff; border-color: var(--red); }
+    .btn.green { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .file-line { background: var(--soft); border: 1px solid var(--line); border-radius: 13px; min-height: 48px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .filename { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .hidden { display: none; }
+    .control { margin: 12px 0; }
+    .control-head { display: grid; grid-template-columns: 98px 1fr 82px; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .range-label { font-size: 14px; font-weight: 800; }
+    .range-side { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+    .range-value { text-align: right; font-size: 15px; font-weight: 800; color: #333; }
+    input[type="range"] { width: 100%; min-height: 34px; accent-color: var(--blue); }
+    .split-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+    .meter { display: grid; grid-template-columns: 104px 1fr 45px; gap: 8px; align-items: center; }
+    .meter-name { font-size: 14px; font-weight: 700; color: #444; }
+    .bar { height: 6px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; width: 0%; background: var(--blue); border-radius: 999px; transition: width .08s linear; }
+    .bar.red > span { background: var(--red); }
+    .bar.green > span { background: var(--green); }
+    .meter-value { font-size: 14px; font-weight: 800; color: #444; text-align: right; }
+    .statline { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; color: #333; font-size: 15px; }
+    .statbox { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-weight: 800; }
+    .statbox span { color: var(--muted); font-weight: 700; margin-right: 6px; }
+    .log { height: 150px; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
+    .alert { display: none; padding: 12px; border-radius: 12px; font-weight: 800; margin-bottom: 10px; line-height: 1.35; }
+    .alert.show { display: block; }
+    .alert.info { background: #dbeafe; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .alert.warn { background: #ffedd5; color: #7c2d12; border: 1px solid #fed7aa; }
+    .alert.trigger { background: #fee2e2; color: #7f1d1d; border: 1px solid #fecaca; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.55; margin-top: 8px; }
+    .bottom-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: rgba(242,243,245,.92); backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+    .bottom-inner { max-width: 760px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    audio { width: 100%; margin-top: 10px; }
+    @media (max-width: 560px) {
+      .device-row { grid-template-columns: 1fr; }
+      .control-head { grid-template-columns: 86px 1fr 76px; }
+      .status-grid { grid-template-columns: 1fr; }
+      .meter { grid-template-columns: 92px 1fr 42px; }
+      .statline { grid-template-columns: 1fr; }
+      h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar"><h1>噪音提醒系統 v4</h1></div>
+
+    <section class="card">
+      <div id="msg" class="alert info"></div>
+      <h2 class="card-title">設備設定</h2>
+      <div class="grid">
+        <div class="device-row">
+          <label for="micSelect">輸入設備（麥克風）：</label>
+          <select id="micSelect"><option value="">預設麥克風</option></select>
+        </div>
+        <div class="device-row">
+          <label for="speakerSelect">輸出設備（音箱）：</label>
+          <select id="speakerSelect"><option value="">預設輸出</option></select>
+        </div>
+        <div class="row">
+          <button class="btn" id="refreshBtn" type="button">刷新設備</button>
+          <button class="btn" id="testBtn" type="button">測試音效</button>
+        </div>
+      </div>
+      <div class="hint">手機版通常由系統決定輸出音箱；電腦 Chrome / Edge 才較大機會支援選擇輸出設備。</div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">提示音頻</h2>
+      <input class="hidden" id="soundFile" type="file" accept="audio/*" />
+      <div class="file-line">
+        <span class="filename" id="soundName">預設 Beep 提示音</span>
+        <button class="btn" id="chooseSoundBtn" type="button">選擇文件</button>
+      </div>
+      <audio id="alertAudio" controls preload="auto"></audio>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="resetSoundBtn" type="button">還原預設</button>
+        <button class="btn" id="clearLogBtn" type="button">清除日誌</button>
+      </div>
+      <div class="hint">建議使用 1–5 秒 MP3 / M4A / WAV。請避免使用過大或過高音量聲音。</div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">參數調節</h2>
+      <div class="control">
+        <div class="control-head"><span class="range-label">靈敏度：</span><div class="range-side"><span>高</span><span>低</span></div><span class="range-value" id="sensitivityVal">7</span></div>
+        <input id="sensitivity" type="range" min="1" max="10" value="7" />
+      </div>
+      <div class="control">
+        <div class="control-head"><span class="range-label">確認次數：</span><div></div><span class="range-value" id="confirmVal">3次/4秒</span></div>
+        <input id="confirmCount" type="range" min="1" max="6" value="3" />
+        <input id="confirmWindow" type="range" min="2" max="10" value="4" />
+      </div>
+      <div class="control">
+        <div class="control-head"><span class="range-label">冷卻時間：</span><div></div><span class="range-value" id="cooldownVal">5秒</span></div>
+        <input id="cooldown" type="range" min="1" max="30" value="5" />
+      </div>
+      <div class="control">
+        <div class="control-head"><span class="range-label">低頻範圍：</span><div></div><span class="range-value" id="freqVal">40–180 Hz</span></div>
+        <input id="minHz" type="range" min="20" max="200" value="40" />
+        <input id="maxHz" type="range" min="80" max="500" value="180" />
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="split-actions">
+        <button class="btn green" id="startBtn" type="button">▶ 開始監聽</button>
+        <button class="btn danger" id="stopBtn" type="button" disabled>■ 停止</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">運行狀態</h2>
+      <div id="statusText" style="font-weight:800;margin-bottom:12px">未啟動</div>
+      <div class="status-grid">
+        <div class="meter"><span class="meter-name">低頻能量：</span><div class="bar"><span id="lowEnergyBar"></span></div><span class="meter-value" id="lowEnergyText">0</span></div>
+        <div class="meter"><span class="meter-name">低頻佔比：</span><div class="bar"><span id="lowRatioBar"></span></div><span class="meter-value" id="lowRatioText">0%</span></div>
+        <div class="meter"><span class="meter-name">突銳度：</span><div class="bar"><span id="burstBar"></span></div><span class="meter-value" id="burstText">0</span></div>
+        <div class="meter"><span class="meter-name">綜合評分：</span><div class="bar green"><span id="scoreBar"></span></div><span class="meter-value" id="scoreText">0</span></div>
+        <div class="meter"><span class="meter-name">衝擊累積：</span><div class="bar red"><span id="hitBar"></span></div><span class="meter-value" id="hitText">0/3</span></div>
+      </div>
+      <div class="statline">
+        <div class="statbox"><span>觸發次數:</span><b id="triggerCount">0</b></div>
+        <div class="statbox"><span>運行時長:</span><b id="runtime">00:00:00</b></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">日誌</h2>
+      <div class="log" id="logBox"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">使用提示</h2>
+      <div class="hint">此版本適合手機及電腦瀏覽器。請使用 HTTPS 開啟才能存取麥克風。功能只應用作合理提醒、測試或自我記錄，不應用於騷擾他人或製造過大噪音。</div>
+    </section>
+  </main>
+
+  <nav class="bottom-bar">
+    <div class="bottom-inner">
+      <button class="btn green" id="startBtn2" type="button">▶ 開始監聽</button>
+      <button class="btn danger" id="stopBtn2" type="button" disabled>■ 停止</button>
+    </div>
+  </nav>
+
+  <script>
+    let audioCtx = null;
+    let analyser = null;
+    let micSource = null;
+    let micStream = null;
+    let raf = null;
+    let startedAt = 0;
+    let runtimeTimer = null;
+    let triggerCount = 0;
+    let recentHits = [];
+    let lastTriggerAt = 0;
+    let lastLowEnergy = 0;
+    let selectedSoundURL = '';
+    let msgTimer = null;
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      micSelect: $('micSelect'), speakerSelect: $('speakerSelect'), refreshBtn: $('refreshBtn'),
+      soundFile: $('soundFile'), chooseSoundBtn: $('chooseSoundBtn'), soundName: $('soundName'), alertAudio: $('alertAudio'),
+      resetSoundBtn: $('resetSoundBtn'), testBtn: $('testBtn'), clearLogBtn: $('clearLogBtn'),
+      sensitivity: $('sensitivity'), confirmCount: $('confirmCount'), confirmWindow: $('confirmWindow'), cooldown: $('cooldown'), minHz: $('minHz'), maxHz: $('maxHz'),
+      sensitivityVal: $('sensitivityVal'), confirmVal: $('confirmVal'), cooldownVal: $('cooldownVal'), freqVal: $('freqVal'),
+      startBtn: $('startBtn'), stopBtn: $('stopBtn'), startBtn2: $('startBtn2'), stopBtn2: $('stopBtn2'),
+      statusText: $('statusText'), msg: $('msg'), logBox: $('logBox'),
+      lowEnergyBar: $('lowEnergyBar'), lowRatioBar: $('lowRatioBar'), burstBar: $('burstBar'), scoreBar: $('scoreBar'), hitBar: $('hitBar'),
+      lowEnergyText: $('lowEnergyText'), lowRatioText: $('lowRatioText'), burstText: $('burstText'), scoreText: $('scoreText'), hitText: $('hitText'),
+      triggerCount: $('triggerCount'), runtime: $('runtime')
+    };
+
+    function timeNow(){ return new Date().toLocaleTimeString('zh-Hant', {hour12:false}); }
+    function log(text){ els.logBox.textContent += `[${timeNow()}] ${text}
+`; els.logBox.scrollTop = els.logBox.scrollHeight; }
+    function showMsg(text, type='info', dur=3200){
+      els.msg.className = 'alert show ' + type;
+      els.msg.textContent = text;
+      clearTimeout(msgTimer);
+      if(dur) msgTimer = setTimeout(()=>els.msg.classList.remove('show'), dur);
+    }
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+    function setBar(bar, value){ bar.style.width = clamp(value,0,100) + '%'; }
+
+    function updateLabels(){
+      els.sensitivityVal.textContent = els.sensitivity.value;
+      els.confirmVal.textContent = `${els.confirmCount.value}次/${els.confirmWindow.value}秒`;
+      els.cooldownVal.textContent = `${els.cooldown.value}秒`;
+      let minHz = Number(els.minHz.value), maxHz = Number(els.maxHz.value);
+      if(minHz >= maxHz){ maxHz = minHz + 20; els.maxHz.value = maxHz; }
+      els.freqVal.textContent = `${els.minHz.value}–${els.maxHz.value} Hz`;
+      els.hitText.textContent = `${recentHits.length}/${els.confirmCount.value}`;
+    }
+    ['sensitivity','confirmCount','confirmWindow','cooldown','minHz','maxHz'].forEach(id => $(id).addEventListener('input', updateLabels));
+    updateLabels();
+
+    async function ensureAudio(){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) throw new Error('此瀏覽器不支援 Web Audio API');
+      if(!audioCtx || audioCtx.state === 'closed') audioCtx = new AC();
+      if(audioCtx.state === 'suspended') await audioCtx.resume();
+      return audioCtx;
+    }
+
+    function makeDefaultBeep(){
+      return new Promise(async resolve => {
+        const ac = await ensureAudio();
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.0001, ac.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.55, ac.currentTime + .02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + .55);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(); osc.stop(ac.currentTime + .58);
+        setTimeout(resolve, 650);
+      });
+    }
+
+    async function setAudioOutput(){
+      const sinkId = els.speakerSelect.value;
+      if(typeof els.alertAudio.setSinkId === 'function'){
+        try { await els.alertAudio.setSinkId(sinkId); log(`輸出設備已設定：${els.speakerSelect.selectedOptions[0]?.textContent || '預設'}`); }
+        catch(e){ showMsg('輸出設備設定失敗：' + e.message, 'warn'); }
+      } else if(sinkId) {
+        showMsg('此瀏覽器不支援網頁指定音箱，請用系統藍牙/音訊設定選擇輸出。', 'warn');
+      }
+    }
+
+    async function playAlertSound(){
+      try{
+        await setAudioOutput();
+        if(selectedSoundURL){
+          els.alertAudio.currentTime = 0;
+          await els.alertAudio.play();
+        } else {
+          await makeDefaultBeep();
+        }
+        if(navigator.vibrate) navigator.vibrate([120,60,120]);
+      }catch(e){
+        showMsg('提示音播放失敗：請先按一次「測試音效」或重新選擇音訊。', 'warn');
+        log('提示音播放失敗：' + e.message);
+      }
+    }
+
+    function resetSound(){
+      if(selectedSoundURL) URL.revokeObjectURL(selectedSoundURL);
+      selectedSoundURL = '';
+      els.alertAudio.removeAttribute('src');
+      els.alertAudio.load();
+      els.soundName.textContent = '預設 Beep 提示音';
+      try{ localStorage.removeItem('noise_v4_sound_name'); }catch(e){}
+      log('已還原預設提示音');
+    }
+
+    els.chooseSoundBtn.addEventListener('click', () => els.soundFile.click());
+    els.soundFile.addEventListener('change', () => {
+      const file = els.soundFile.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('audio/')){ showMsg('請選擇音訊檔案。', 'warn'); return; }
+      if(selectedSoundURL) URL.revokeObjectURL(selectedSoundURL);
+      selectedSoundURL = URL.createObjectURL(file);
+      els.alertAudio.src = selectedSoundURL;
+      els.soundName.textContent = file.name;
+      try{ localStorage.setItem('noise_v4_sound_name', file.name); }catch(e){}
+      log('已選擇音頻：' + file.name);
+    });
+    els.resetSoundBtn.addEventListener('click', resetSound);
+    els.testBtn.addEventListener('click', playAlertSound);
+    els.clearLogBtn.addEventListener('click', () => els.logBox.textContent = '');
+    els.speakerSelect.addEventListener('change', setAudioOutput);
+
+    async function refreshDevices(){
+      try{
+        if(!micStream){
+          const temp = await navigator.mediaDevices.getUserMedia({audio:true});
+          temp.getTracks().forEach(t=>t.stop());
+        }
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const oldMic = els.micSelect.value;
+        const oldSpk = els.speakerSelect.value;
+        els.micSelect.innerHTML = '<option value="">預設麥克風</option>';
+        els.speakerSelect.innerHTML = '<option value="">預設輸出</option>';
+        devices.filter(d=>d.kind==='audioinput').forEach((d,i)=>{
+          const opt = document.createElement('option'); opt.value = d.deviceId; opt.textContent = `[${i+1}] ${d.label || 'Microphone ' + (i+1)}`; els.micSelect.appendChild(opt);
+        });
+        devices.filter(d=>d.kind==='audiooutput').forEach((d,i)=>{
+          const opt = document.createElement('option'); opt.value = d.deviceId; opt.textContent = `[${i+1}] ${d.label || 'Speaker ' + (i+1)}`; els.speakerSelect.appendChild(opt);
+        });
+        els.micSelect.value = oldMic;
+        els.speakerSelect.value = oldSpk;
+        log('設備列表已刷新');
+      }catch(e){
+        showMsg('刷新設備失敗：' + e.message, 'warn');
+        log('刷新設備失敗：' + e.message);
+      }
+    }
+    els.refreshBtn.addEventListener('click', refreshDevices);
+
+    function updateRuntime(){
+      const sec = Math.floor((Date.now() - startedAt)/1000);
+      const h = String(Math.floor(sec/3600)).padStart(2,'0');
+      const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+      const s = String(sec%60).padStart(2,'0');
+      els.runtime.textContent = `${h}:${m}:${s}`;
+    }
+
+    function setRunning(running){
+      els.startBtn.disabled = running; els.startBtn2.disabled = running;
+      els.stopBtn.disabled = !running; els.stopBtn2.disabled = !running;
+      els.statusText.textContent = running ? '監聽中...' : '已停止';
+    }
+
+    function analyze(){
+      const bufferLength = analyser.frequencyBinCount;
+      const data = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(data);
+      const sr = audioCtx.sampleRate;
+      const binSize = sr / analyser.fftSize;
+      const minBin = Math.max(0, Math.floor(Number(els.minHz.value) / binSize));
+      const maxBin = Math.min(bufferLength-1, Math.ceil(Number(els.maxHz.value) / binSize));
+      let lowSum = 0, totalSum = 0;
+      for(let i=0;i<bufferLength;i++) totalSum += data[i];
+      for(let i=minBin;i<=maxBin;i++) lowSum += data[i];
+      const lowEnergy = lowSum / Math.max(1, maxBin-minBin+1);
+      const lowRatio = totalSum > 0 ? lowSum / totalSum : 0;
+      const burst = Math.max(0, lowEnergy - lastLowEnergy);
+      lastLowEnergy = lastLowEnergy * .65 + lowEnergy * .35;
+
+      const sensitivity = Number(els.sensitivity.value);
+      const threshold = 118 - sensitivity * 8;
+      const score = (lowEnergy * .58) + (lowRatio * 100 * .28) + (burst * .85);
+      const isHit = score > threshold;
+      const now = Date.now();
+      const windowMs = Number(els.confirmWindow.value) * 1000;
+      const confirmNeed = Number(els.confirmCount.value);
+      recentHits = recentHits.filter(t => now - t <= windowMs);
+      if(isHit) recentHits.push(now);
+      const hitPercent = recentHits.length / confirmNeed * 100;
+
+      setBar(els.lowEnergyBar, lowEnergy/2.55); els.lowEnergyText.textContent = Math.round(lowEnergy);
+      setBar(els.lowRatioBar, lowRatio*100); els.lowRatioText.textContent = Math.round(lowRatio*100) + '%';
+      setBar(els.burstBar, burst/1.6); els.burstText.textContent = Math.round(burst);
+      setBar(els.scoreBar, score); els.scoreText.textContent = Math.round(score);
+      setBar(els.hitBar, hitPercent); els.hitText.textContent = `${Math.min(recentHits.length, confirmNeed)}/${confirmNeed}`;
+
+      const cooldownMs = Number(els.cooldown.value) * 1000;
+      if(recentHits.length >= confirmNeed && now - lastTriggerAt >= cooldownMs){
+        lastTriggerAt = now;
+        recentHits = [];
+        triggerCount += 1;
+        els.triggerCount.textContent = String(triggerCount);
+        showMsg('偵測到符合條件的聲音，已播放提示音。', 'trigger', 1800);
+        log(`觸發提示音 #${triggerCount}（評分 ${Math.round(score)}，低頻能量 ${Math.round(lowEnergy)}，低頻佔比 ${Math.round(lowRatio*100)}%）`);
+        playAlertSound();
+      }
+      raf = requestAnimationFrame(analyze);
+    }
+
+    async function start(){
+      if(!navigator.mediaDevices?.getUserMedia){ showMsg('此瀏覽器不支援麥克風。', 'warn'); return; }
+      try{
+        await ensureAudio();
+        const deviceId = els.micSelect.value;
+        micStream = await navigator.mediaDevices.getUserMedia({audio: {deviceId: deviceId ? {exact: deviceId} : undefined, echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = .78;
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(analyser);
+        startedAt = Date.now();
+        runtimeTimer = setInterval(updateRuntime, 500);
+        setRunning(true);
+        log(`V4 監測已啟動（靈敏度${els.sensitivity.value}，確認${els.confirmCount.value}次/${els.confirmWindow.value}秒，冷卻${els.cooldown.value}秒）`);
+        showMsg('已開始監聽。請保持頁面開啟。', 'info');
+        analyze();
+        refreshDevices();
+      }catch(e){
+        showMsg('無法開啟麥克風：' + e.message, 'warn', 5000);
+        log('無法開啟麥克風：' + e.message);
+        setRunning(false);
+      }
+    }
+
+    function stop(){
+      if(raf) cancelAnimationFrame(raf); raf = null;
+      if(runtimeTimer) clearInterval(runtimeTimer); runtimeTimer = null;
+      if(micSource) micSource.disconnect(); micSource = null;
+      if(micStream) micStream.getTracks().forEach(t=>t.stop()); micStream = null;
+      setRunning(false);
+      els.lowEnergyText.textContent = '0'; els.lowRatioText.textContent = '0%'; els.burstText.textContent = '0'; els.scoreText.textContent = '0';
+      [els.lowEnergyBar, els.lowRatioBar, els.burstBar, els.scoreBar, els.hitBar].forEach(b=>setBar(b,0));
+      recentHits = []; updateLabels();
+      log('監測已停止');
+    }
+
+    els.startBtn.addEventListener('click', start); els.startBtn2.addEventListener('click', start);
+    els.stopBtn.addEventListener('click', stop); els.stopBtn2.addEventListener('click', stop);
+
+    if(!window.isSecureContext) showMsg('手機使用麥克風通常需要 HTTPS。請用 GitHub Pages / Netlify 等 HTTPS 網址開啟。', 'warn', 0);
+    log('系統已載入，請刷新設備或直接開始監聽。');
+    refreshDevices();
+  </script>
+</body>
+</html>
